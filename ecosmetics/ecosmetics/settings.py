@@ -14,7 +14,7 @@ from pathlib import Path
 import os
 import cloudinary
 from dotenv import load_dotenv
-load_dotenv('ecosmetics/env/.env')
+load_dotenv('env/.env')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,11 +30,18 @@ SECRET_KEY = 'django-insecure-0xt8vt6flulqdz=s5&q$z*@$d1+c26aw8ges#mb5%1w)onns$2
 DEBUG = True
 
 ALLOWED_HOSTS = []
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MEDIA_ROOT = '%s/cosmetics/static/' % BASE_DIR
 CKEDITOR_UPLOAD_PATH = "static/ckeditor/product/images/"
+
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:9000",
+]
+
+OAUTH2_PROVIDER = {'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore'}
 
 # Email Settings
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
@@ -59,13 +66,15 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'rest_framework.authtoken',
-    'corsheaders',
+    "corsheaders",
     'oauth2_provider',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -74,6 +83,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'ecosmetics.urls'
+
 
 TEMPLATES = [
     {
@@ -164,7 +174,6 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 cloudinary.config(
     cloud_name=os.getenv('cloud_name'),
     api_key=os.getenv('api_key'),

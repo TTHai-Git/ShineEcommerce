@@ -3,7 +3,7 @@
 import os
 import sys
 from dotenv import load_dotenv
-load_dotenv('ecosmetics/env/.env')
+load_dotenv('env/.env')
 
 
 def main():

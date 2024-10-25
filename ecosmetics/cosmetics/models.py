@@ -81,17 +81,33 @@ class Tag(BaseModel):
         return f'{self.id} - {self.name}'
 
 
-class Product(BaseModel):
-    name = models.CharField(max_length=255)
-    unit_price = models.FloatField()
-    color = models.CharField(max_length=20, null=True, blank=True)
-    description = RichTextField(null=True, blank=True)
-    image = CloudinaryField(null=True, blank=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    tags = models.ManyToManyField(Tag, related_name='products')
+class Origin(models.Model):
+    name = models.CharField(max_length=100)
 
     def __str__(self):
-        return f'{self.id} - {self.name} - {self.category.name}'
+        return f'{self.id} - {self.name}'
+
+
+class Product(BaseModel):
+    name = models.CharField(max_length=255)
+    # unit_price = models.DecimalField(max_digits=20, decimal_places=3)
+    unit_price = models.FloatField()
+    color = models.CharField(max_length=100, null=True, blank=True)
+    description = RichTextField(null=True, blank=True)
+    image = CloudinaryField(null=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    tags = models.ManyToManyField(Tag, related_name='products')
+    origins = models.ManyToManyField(Origin, related_name='products')
+    discount = models.IntegerField(default=0, null=True)
+
+    def clean(self):
+        if not (0 <= self.discount <= 100):
+            raise ValidationError("Percent must be between 0 and 100.")
+        if not (0 <= self.unit_price <= 1000000000.0):
+            raise ValidationError("Unit price must be between 0 and 1000000.0")
+
+    def __str__(self):
+        return f'{self.id} - {self.name} - {self.category.name} - {self.discount}'
 
 
 class Order(BaseModel):
@@ -121,18 +137,6 @@ class OrderDetail(models.Model):
         return f'OrderDetail: {self.product.name} (x{self.quantity})'
 
 
-class Promotion(BaseModel):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    percent = models.PositiveIntegerField()
-
-    def clean(self):
-        if not (0 <= self.percent <= 100):
-            raise ValidationError("Percent must be between 0 and 100.")
-
-    def __str__(self):
-        return f'Promotion: {self.product.name} - {self.percent}%'
-
-
 class PromotionTicket(BaseModel):
     code = models.CharField(max_length=50, unique=True)
     orders = models.ManyToManyField(Order, related_name='promotion_tickets')
@@ -160,23 +164,25 @@ class Interaction(BaseModel):
 
 class Comment(Interaction):
     content = models.TextField()
+    star = models.IntegerField(null=True, default=0)
 
     def __str__(self):
         return f'Comment by {self.user.username} on {self.product.name}'
 
 
-class Like(Interaction):
-    class Meta:
-        unique_together = ('user', 'product')
-
-    def __str__(self):
-        return f'Like by {self.user.username} on {self.product.name}'
+# class Like(Interaction):
+#     class Meta:
+#         unique_together = ('user', 'product')
+#
+#     def __str__(self):
+#         return f'Like by {self.user.username} on {self.product.name}'
 
 
 class Notification(BaseModel):
     title = models.CharField(max_length=100, null=True, default=None)
     description = models.CharField(max_length=100, null=True, default=None)
     content = RichTextField()
+    image = CloudinaryField(null=True)
     type = models.CharField(max_length=50, choices=NotificationEnum.choices, null=True)
 
 

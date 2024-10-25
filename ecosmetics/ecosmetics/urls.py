@@ -23,6 +23,13 @@ from drf_yasg import openapi
 
 router = routers.DefaultRouter()
 router.register('users', views.UserViewSet, basename='users')
+router.register('products', views.ProductViewSet, basename='products')
+router.register('categories', views.CategoryViewSet, basename='categories')
+router.register('tags', views.TagViewSet, basename='tags')
+router.register('notifications', views.NotificationViewSet, basename='notifications')
+router.register('comments', views.CommentViewSet, basename='comments')
+router.register('origins', views.OriginsViewSet, basename='origins')
+
 
 schema_view = get_schema_view(
     openapi.Info(

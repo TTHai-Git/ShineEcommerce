@@ -18,28 +18,34 @@ class ScoreAppAdminSite(admin.AdminSite):
 
 admin_site = ScoreAppAdminSite(name='myadmin')
 
+# class ProductForm(forms.ModelForm):
+#     description = forms.CharField(widget=CKEditorUploadingWidget)
+#
+#     class Meta:
+#         model = Product
+#         fields = '__all__'
 
-class ProductForm(forms.ModelForm):
-    description = forms.CharField(widget=CKEditorUploadingWidget)
 
-    class Meta:
-        model = Product
-        fields = '__all__'
+# class MyProductAdmin(admin.ModelAdmin):
+#     list_display = ['id', 'name', 'created_date', 'updated_date', 'active']
+#     search_fields = ['name', 'description']
+#     list_filter = ['id', 'created_date', 'name']
+#     readonly_fields = ['my_image']
+#     form = ProductForm
+#
+#     def my_image(self, instance):
+#         if instance:
+#             if instance.image is cloudinary.CloudinaryResource:
+#                 return mark_safe(f"<img width='120' src='{instance.image.url}' />")
+#
+#             return mark_safe(f"<img width='120' src='/static/{instance.image.name}' />")
 
-
-class MyProductAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'created_date', 'updated_date', 'active']
-    search_fields = ['name', 'description']
-    list_filter = ['id', 'created_date', 'name']
-    readonly_fields = ['my_image']
-    form = ProductForm
-
-    def my_image(self, instance):
-        if instance:
-            if instance.image is cloudinary.CloudinaryResource:
-                return mark_safe(f"<img width='120' src='{instance.image.url}' />")
-
-            return mark_safe(f"<img width='120' src='/static/{instance.image.name}' />")
 
 admin.site.register(Role)
 admin.site.register(User)
+admin.site.register(Category)
+admin.site.register(Product)
+admin.site.register(Tag)
+admin.site.register(Notification)
+admin.site.register(Comment)
+admin.site.register(Origin)
