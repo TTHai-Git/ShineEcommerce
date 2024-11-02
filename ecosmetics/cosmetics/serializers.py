@@ -129,7 +129,6 @@ class RelatedProductSerializer(serializers.Serializer):
     id_product = serializers.IntegerField()
     image_product = serializers.CharField()
     name_product = serializers.CharField()
-    name_category = serializers.CharField()
     # unit_price_product = serializers.DecimalField(max_digits=20, decimal_places=3)
     unit_price_product = serializers.FloatField()
     discount_product = serializers.CharField()
