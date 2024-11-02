@@ -24,10 +24,10 @@ class ShipEnum(models.TextChoices):
     DELIVERY = 'Giao hàng tận nơi'
 
 
-class NotificationEnum(models.TextChoices):
-    NOTIFICATION = 'Thông báo'
-    EVENT = 'Sự kiện'
-    BLOG = 'Blog'
+# class NotificationEnum(models.TextChoices):
+#     NOTIFICATION = 'Thông báo'
+#     EVENT = 'Sự kiện'
+#     BLOG = 'Blog'
 
 
 class Role(models.Model):
@@ -39,7 +39,7 @@ class Role(models.Model):
 
 class User(AbstractUser):
     def validate_mail(value):
-        if not value.endswith("@gmail.com"):
+        if not value.endswith("@gmail.com") and not value.endswith("@ou.edu.vn"):
             raise ValidationError("Phải dùng tài khoản Gmail (@gmail.com)")
 
     dob = models.DateField(null=True)
@@ -178,12 +178,12 @@ class Comment(Interaction):
 #         return f'Like by {self.user.username} on {self.product.name}'
 
 
-class Notification(BaseModel):
+class Blog(BaseModel):
     title = models.CharField(max_length=100, null=True, default=None)
     description = models.CharField(max_length=100, null=True, default=None)
     content = RichTextField()
     image = CloudinaryField(null=True)
-    type = models.CharField(max_length=50, choices=NotificationEnum.choices, null=True)
+    # type = models.CharField(max_length=50, choices=NotificationEnum.choices, null=True)
 
 
 class Contact(BaseModel):

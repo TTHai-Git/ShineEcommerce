@@ -21,5 +21,5 @@ class CommentPaginator(pagination.PageNumberPagination):
     page_size = 5
 
 
-class NotificationPaginator(pagination.PageNumberPagination):
+class BlogPaginator(pagination.PageNumberPagination):
     page_size = 5

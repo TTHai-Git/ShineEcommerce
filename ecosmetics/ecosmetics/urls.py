@@ -26,7 +26,7 @@ router.register('users', views.UserViewSet, basename='users')
 router.register('products', views.ProductViewSet, basename='products')
 router.register('categories', views.CategoryViewSet, basename='categories')
 router.register('tags', views.TagViewSet, basename='tags')
-router.register('notifications', views.NotificationViewSet, basename='notifications')
+router.register('blogs', views.BlogViewSet, basename='blogs')
 router.register('comments', views.CommentViewSet, basename='comments')
 router.register('origins', views.OriginsViewSet, basename='origins')
 

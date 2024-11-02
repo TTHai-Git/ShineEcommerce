@@ -12,7 +12,8 @@ class RoleSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'username', 'password', 'email', 'avatar', 'role']
+        fields = ['id', 'first_name', 'last_name', 'username', 'password', 'dob', 'address', 'phone', 'email',
+                  'avatar', 'role']
         extra_kwargs = {
             'password': {
                 'write_only': True
@@ -57,9 +58,9 @@ class ProductSerializer(serializers.ModelSerializer):
         return rep
 
 
-class NotificationSerializer(serializers.ModelSerializer):
+class BlogSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Notification
+        model = Blog
         fields = '__all__'
 
     def create(self, validated_data, request=None):
@@ -68,9 +69,9 @@ class NotificationSerializer(serializers.ModelSerializer):
         if image_file:
             new_image_file = cloudinary.uploader.upload(image_file)
             data['image'] = new_image_file['secure_url']
-        notification = Notification(**data)
-        notification.save()
-        return notification
+        blog = Blog(**data)
+        blog.save()
+        return blog
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
@@ -78,11 +79,12 @@ class NotificationSerializer(serializers.ModelSerializer):
         return rep
 
 
-class BlogSerializer(serializers.Serializer):
+class BlogsSerializer(serializers.Serializer):
     blog_id = serializers.IntegerField()
     blog_title = serializers.CharField()
     blog_image = serializers.CharField()
     blog_created_date = serializers.DateTimeField()
+    blog_description = serializers.CharField()
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -162,4 +164,10 @@ class ProductDetailsSerializer(serializers.Serializer):
     reviews = ListReviewSerializer(many=True)
     related_products = RelatedProductSerializer(many=True)
 
+
+class BlogDetailsSerializer(serializers.Serializer):
+    blog_id = serializers.IntegerField()
+    blog_title = serializers.CharField()
+    blog_content = serializers.CharField()
+    blog_created_date = serializers.DateTimeField()
 
