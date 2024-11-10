@@ -10,6 +10,8 @@ class RoleSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    avatar = serializers.ImageField(required=False)
+
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'username', 'password', 'dob', 'address', 'phone', 'email',
@@ -20,63 +22,138 @@ class UserSerializer(serializers.ModelSerializer):
             }
         }
 
-    def create(self, validated_data, request=None):
+    def create(self, validated_data):
+        # Access the request from self.context
+        request = self.context.get('request')
         data = validated_data.copy()
-        avatar_file = request.data.get('avatar', None) if request else None
+
+        # Check if an image file is provided in the request
+        avatar_file = request.FILES.get('avatar') if request else None
         if avatar_file:
-            new_avatar = cloudinary.uploader.upload(avatar_file)
-            data['avatar'] = new_avatar['secure_url']
+            # Upload the image to Cloudinary and get the secure URL
+            upload_result = cloudinary.uploader.upload(avatar_file)
+            data['avatar'] = upload_result['secure_url']
+
+        # Create the user instance and hash the password
         user = User(**data)
         user.set_password(data["password"])
         user.save()
+
         return user
 
-    def to_representation(self, instance):
-        rep = super().to_representation(instance)
-        rep['avatar'] = instance.avatar.url
-        return rep
+    # def to_representation(self, instance):
+    #     rep = super().to_representation(instance)
+    #     rep['avatar'] = instance.avatar.url
+    #     return rep
+
+
+class PromotionTicketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PromotionTicket
+        fields = '__all__'
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False)
+    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True)
+    origins = serializers.PrimaryKeyRelatedField(queryset=Origin.objects.all(), many=True)
+
     class Meta:
         model = Product
         fields = '__all__'
 
-    def create(self, validated_data, request=None):
-        data = validated_data.copy()
-        image_file = request.data.get('image', None) if request else None
+    def create(self, validated_data):
+        # Extract many-to-many fields before creating the Product instance
+        tags = validated_data.pop('tags', [])
+        origins = validated_data.pop('origins', [])
+
+        # Handle image upload if provided
+        request = self.context.get('request')
+        image_file = request.FILES.get('image') if request else None
         if image_file:
-            new_image_file = cloudinary.uploader.upload(image_file)
-            data['image'] = new_image_file['secure_url']
-        product = Product(**data)
-        product.save()
+            upload_result = cloudinary.uploader.upload(image_file)
+            validated_data['image'] = upload_result['secure_url']
+
+        # Create the product instance without the many-to-many fields
+        product = Product.objects.create(**validated_data)
+
+        # Assign many-to-many fields using set()
+        product.tags.set(tags)
+        product.origins.set(origins)
+
         return product
 
-    def to_representation(self, instance):
-        rep = super().to_representation(instance)
-        rep['image'] = instance.image.url
-        return rep
+    def update(self, instance, validated_data):
+        # Extract many-to-many fields
+        tags = validated_data.pop('tags', None)
+        origins = validated_data.pop('origins', None)
+
+        # Handle image upload if a new image is provided
+        request = self.context.get('request')
+        image_file = request.FILES.get('image') if request else None
+        if image_file:
+            upload_result = cloudinary.uploader.upload(image_file)
+            validated_data['image'] = upload_result['secure_url']
+
+        # Update instance fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Update many-to-many fields if provided
+        if tags is not None:
+            instance.tags.set(tags)
+        if origins is not None:
+            instance.origins.set(origins)
+
+        return instance
+
+    # def to_representation(self, instance):
+    #     rep = super().to_representation(instance)
+    #     # Include image URL if it exists
+    #     rep['image'] = instance.image if instance.image else instance.image.url
+    #     return rep
 
 
 class BlogSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False)
+
     class Meta:
         model = Blog
         fields = '__all__'
 
-    def create(self, validated_data, request=None):
-        data = validated_data.copy()
-        image_file = request.data.get('image', None) if request else None
+    def create(self, validated_data):
+        # Handle image upload if provided
+        request = self.context.get('request')
+        image_file = request.FILES.get('image') if request else None
         if image_file:
-            new_image_file = cloudinary.uploader.upload(image_file)
-            data['image'] = new_image_file['secure_url']
-        blog = Blog(**data)
-        blog.save()
+            upload_result = cloudinary.uploader.upload(image_file)
+            validated_data['image'] = upload_result['secure_url']
+
+        # Create the blog instance
+        blog = Blog.objects.create(**validated_data)
+
         return blog
 
-    def to_representation(self, instance):
-        rep = super().to_representation(instance)
-        rep['image'] = instance.image.url
-        return rep
+    def update(self, instance, validated_data):
+        # Handle image upload if a new image is provided
+        request = self.context.get('request')
+        image_file = request.FILES.get('image') if request else None
+        if image_file:
+            upload_result = cloudinary.uploader.upload(image_file)
+            validated_data['image'] = upload_result['secure_url']
+
+        # Update instance fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+    # def to_representation(self, instance):
+    #     rep = super().to_representation(instance)
+    #     rep['image'] = instance.image.url if instance.image.url else instance.image
+    #     return rep
 
 
 class BlogsSerializer(serializers.Serializer):
@@ -119,7 +196,7 @@ class ProductHomeSerializer(serializers.Serializer):
     name_product = serializers.CharField()
     # unit_price_product = serializers.DecimalField(max_digits=20, decimal_places=3)
     unit_price_product = serializers.FloatField()
-    discount_product = serializers.CharField()
+    discount_product = serializers.IntegerField()
     # present_price = serializers.DecimalField(max_digits=20, decimal_places=3)
     present_price = serializers.FloatField()
     tags_product = TagSerializer(many=True)
@@ -129,9 +206,10 @@ class RelatedProductSerializer(serializers.Serializer):
     id_product = serializers.IntegerField()
     image_product = serializers.CharField()
     name_product = serializers.CharField()
+    name_category = serializers.CharField()
     # unit_price_product = serializers.DecimalField(max_digits=20, decimal_places=3)
     unit_price_product = serializers.FloatField()
-    discount_product = serializers.CharField()
+    discount_product = serializers.IntegerField()
     # present_price = serializers.DecimalField(max_digits=20, decimal_places=3)
     present_price = serializers.FloatField()
 
