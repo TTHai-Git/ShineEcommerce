@@ -183,7 +183,7 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPI
         ]
 
         # Handle pagination
-        paginator = paginators.ProductPaginator()
+        paginator = paginators.ProductOfCategoryPaginator()
         page = paginator.paginate_queryset(results, request)
         serializer = serializers.RelatedProductSerializer(page, many=True)
 
@@ -224,7 +224,7 @@ class BlogViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView, viewsets.gene
                 "blog_description": blog.description,
                 "blog_created_date": blog.created_date,
             })
-        paginator = paginators.BlogPaginator()
+        paginator = paginators.BlogHomePaginator()
         page = paginator.paginate_queryset(results, request)
         serializer = serializers.BlogsSerializer(page, many=True)
         return paginator.get_paginated_response(serializer.data)
