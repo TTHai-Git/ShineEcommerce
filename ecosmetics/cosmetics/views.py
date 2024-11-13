@@ -72,9 +72,10 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView
                     shipping_fee=float(order['shipping_fee']),
                     total_amount=float(order['total_amount']),
                     is_payment=order['termsAccepted'],
-                    promotion_ticket=PromotionTicket.objects.get(code=order['promotion_ticket_code']
-                                                                 if order['promotion_ticket_code'] != "" else None)
                 )
+                if order['promotion_ticket_code'] != "":
+                    new_order.promotion_ticket = PromotionTicket.objects.get(code=order['promotion_ticket_code'])
+                    new_order.save()
 
                 # Create each order detail
                 for order_detail in order_details:

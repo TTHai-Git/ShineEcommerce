@@ -63,6 +63,7 @@ class User(AbstractUser):
     avatar = CloudinaryField('avatar', null=True, blank=True,
                              default="https://res.cloudinary.com/dh5jcbzly/image/upload""/v1718648320"
                                      "/r77u5n3w3ddyy4yqqamp.jpg")
+    sex = models.BooleanField(null=True, default=False)
     role = models.ForeignKey(
         Role, on_delete=models.SET_NULL, null=True, blank=True, default=None
     )
@@ -178,9 +179,6 @@ class OrderDetail(models.Model):
 
     def __str__(self):
         return f'OrderDetail: {self.product.name} (x{self.quantity})'
-
-
-
 
 
 class Interaction(BaseModel):
