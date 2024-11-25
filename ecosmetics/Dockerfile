@@ -1,5 +1,5 @@
 # Use the official Python image
-FROM python:3.10.0-slim
+FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -12,18 +12,17 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     libmariadb-dev \
     gcc \
-    libpq-dev \             # Added for PostgreSQL support (if needed)
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt . 
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
 COPY . .
 
-# Expose the Django production server port
+# Expose the Django development server port
 EXPOSE 8000
 
-# Collect static files and start Gunicorn
-CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:8000 ecosmetics.wsgi:application"]
+# Command to run the application
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
