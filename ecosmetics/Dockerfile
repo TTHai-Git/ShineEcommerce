@@ -1,24 +1,35 @@
-# syntax=docker/dockerfile:1.4
+# Use the official Python image
+FROM python:3.10.0-slim
 
-FROM --platform=$BUILDPLATFORM python:3.7-alpine AS builder
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set the working directory
+WORKDIR /app
+
+# Install system dependencies
+# Add any required dependencies here to ensure proper package installation
+RUN apt-get update && apt-get install -y \
+    libmariadb-dev \
+    gcc \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file
+COPY requirements.txt .
+
+# Install Python dependencies
+# Use --default-timeout to avoid timeout issues
+RUN pip install --no-cache-dir --default-timeout=100 -r requirements.txt
+
+# Copy project files
+COPY . .
+
+# Expose the Django development server port
 EXPOSE 8000
-WORKDIR /app 
-COPY requirements.txt /app
-RUN pip3 install -r requirements.txt --no-cache-dir
-COPY . /app 
-ENTRYPOINT ["python3"] 
-CMD ["manage.py", "runserver", "0.0.0.0:8000"]
 
-FROM builder as dev-envs
-RUN <<EOF
-apk update
-apk add git
-EOF
-
-RUN <<EOF
-addgroup -S docker
-adduser -S --shell /bin/bash --ingroup docker vscode
-EOF
-# install Docker tools (cli, buildx, compose)
-COPY --from=gloursdocker/docker / /
-CMD ["manage.py", "runserver", "0.0.0.0:8000"]
+# Command to run the application
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
