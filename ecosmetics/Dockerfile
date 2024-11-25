@@ -1,35 +1,17 @@
-# Use the official Python image
-FROM python:3.10.0-slim
-
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
+FROM python:3.12
 ENV PYTHONUNBUFFERED 1
-
-# Set the working directory
 WORKDIR /ecosmetics
-
-# Install system dependencies
-# Add any required dependencies here to ensure proper package installation
-RUN apt-get update && apt-get install -y \
-    libmariadb-dev \
-    gcc \
-    build-essential \
-    libssl-dev \
-    libffi-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy the requirements file
 COPY requirements.txt .
-
-# Install Python dependencies
-# Use --default-timeout to avoid timeout issues
 RUN pip install -r requirements.txt
-
-# Copy project files
+# Copy toàn bộ mã nguồn vào container
 COPY . .
 
-# Expose the Django development server port
-EXPOSE 8000
+## Tạo migrations và áp dụng chúng
+RUN python manage.py makemigrations
+RUN python manage.py migrate
 
-# Command to run the application
+#CMD  python manage.py runserver 0.0.0.0:8000
+# Expose the Django production server port
+EXPOSE 8000
+# Lệnh mặc định để chạy server Django
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
