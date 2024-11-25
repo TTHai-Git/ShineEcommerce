@@ -1,28 +1,21 @@
-# Use the official Python image
-FROM python:3.11-slim
-
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
+FROM python:3.12
 ENV PYTHONUNBUFFERED 1
-
-# Set the working directory
 WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    libmariadb-dev \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy project files
+RUN pip install -r requirements.txt
+# Copy toàn bộ mã nguồn vào container
 COPY . .
 
-# Expose the Django development server port
-EXPOSE 8000
+## Tạo migrations và áp dụng chúng
+#RUN python manage.py makemigrations
+#RUN python manage.py migrate
 
-# Command to run the application
+# Sao chép script khởi động vào container
+COPY entrypoint.sh /entrypoint.sh
+# Cấp quyền thực thi cho script khởi động
+RUN chmod +x /entrypoint.sh
+# Thiết lập script khởi động là ENTRYPOINT
+ENTRYPOINT ["/entrypoint.sh"]
+#CMD  python manage.py runserver 0.0.0.0:8000
+# Lệnh mặc định để chạy server Django
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
