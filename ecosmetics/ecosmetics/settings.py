@@ -27,9 +27,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-0xt8vt6flulqdz=s5&q$z*@$d1+c26aw8ges#mb5%1w)onns$2'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
-
-ALLOWED_HOSTS = []
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
+# Set ALLOWED_HOSTS
+if DEBUG:
+    ALLOWED_HOSTS = ['*']  # Allow all hosts in development
+else:
+    ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',')
 MEDIA_ROOT = '%s/cosmetics/static/' % BASE_DIR
 CKEDITOR_UPLOAD_PATH = "static/ckeditor/product/images/"
 
