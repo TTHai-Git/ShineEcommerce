@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-0xt8vt6flulqdz=s5&q$z*@$d1+c26aw8ges#mb5%1w)onns$2'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = []
 MEDIA_ROOT = '%s/cosmetics/static/' % BASE_DIR
