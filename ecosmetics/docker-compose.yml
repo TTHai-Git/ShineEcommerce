@@ -14,7 +14,8 @@ services:
     depends_on:
       - db
     environment:
-      DJANGO_SETTINGS_MODULE: ecosmetics.settings
+      DEBUG: "False"  # Set to "True" during development
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,your-domain.com"  # Add valid hosts
       MYSQL_HOST: db
       MYSQL_PORT: 3306
       MYSQL_DATABASE: shineecommercedb
