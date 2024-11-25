@@ -12,10 +12,11 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     libmariadb-dev \
     gcc \
+    libpq-dev \             # Added for PostgreSQL support (if needed)
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY requirements.txt . 
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
