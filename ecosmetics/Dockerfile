@@ -1,21 +1,35 @@
-FROM python:3.12
+# Use the official Python image
+FROM python:3.10.0-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-WORKDIR /app
+
+# Set the working directory
+WORKDIR /ecosmetics
+
+# Install system dependencies
+# Add any required dependencies here to ensure proper package installation
+RUN apt-get update && apt-get install -y \
+    libmariadb-dev \
+    gcc \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file
 COPY requirements.txt .
+
+# Install Python dependencies
+# Use --default-timeout to avoid timeout issues
 RUN pip install -r requirements.txt
-# Copy toàn bộ mã nguồn vào container
+
+# Copy project files
 COPY . .
 
-## Tạo migrations và áp dụng chúng
-#RUN python manage.py makemigrations
-#RUN python manage.py migrate
+# Expose the Django development server port
+EXPOSE 8000
 
-# Sao chép script khởi động vào container
-COPY entrypoint.sh /entrypoint.sh
-# Cấp quyền thực thi cho script khởi động
-RUN chmod +x /entrypoint.sh
-# Thiết lập script khởi động là ENTRYPOINT
-ENTRYPOINT ["/entrypoint.sh"]
-#CMD  python manage.py runserver 0.0.0.0:8000
-# Lệnh mặc định để chạy server Django
+# Command to run the application
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
