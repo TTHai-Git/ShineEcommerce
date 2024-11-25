@@ -153,6 +153,25 @@ class Order(BaseModel):
     is_payment = models.BooleanField(default=False)
     promotion_ticket = models.ForeignKey(PromotionTicket, default=None, null=True, on_delete=models.CASCADE)
 
+    ORDER_STATUS_CHOICES = [
+        ('NEW', 'Chờ xác nhận'),
+        ('CONFIRMED', 'Đã xác nhận'),
+        ('PROCESSING', 'Đang xử lý'),
+        ('SHIPPING', 'Đang giao hàng'),
+        ('DELIVERED', 'Đã giao hàng'),
+        ('CANCELLED', 'Đã hủy'),
+        ('RETURNED', 'Hoàn trả'),
+        ('REFUNDED', 'Hoàn tiền'),
+        ('FAILED', 'Thất bại'),
+    ]
+
+    status = models.CharField(
+        max_length=20,
+        choices=ORDER_STATUS_CHOICES,
+        default='Chờ xác nhận',
+        null=True
+    )
+
     def clean(self):
         # Ensure that total_amount is within an acceptable range
         if not 0 <= self.total_amount:

@@ -35,3 +35,11 @@ class BlogHomePaginator(pagination.PageNumberPagination):
 
 class PromotionTicketPaginator(pagination.PageNumberPagination):
     page_size = 5
+
+
+class OrderDetailPaginator(pagination.PageNumberPagination):
+    page_size = 5
+
+
+class OrdersOfCustomerPaginator(pagination.PageNumberPagination):
+    page_size = 5

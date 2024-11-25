@@ -188,6 +188,23 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class OrderDetailOfCustomerSerializer(serializers.Serializer):
+    order_detail_id = serializers.IntegerField()
+    order_detail_product_image = serializers.CharField()
+    order_detail_product_name = serializers.CharField()
+    order_detail_product_unit_price = serializers.FloatField()
+    order_detail_product_quantity = serializers.IntegerField()
+    order_detail_product_discount = serializers.IntegerField()
+    order_detail_discount_price = serializers.FloatField()
+    order_detail_total_amount = serializers.FloatField()
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = '__all__'
+
+
 class ProductHomeSerializer(serializers.Serializer):
     id_product = serializers.IntegerField()
     id_category = serializers.IntegerField()
@@ -248,3 +265,16 @@ class BlogDetailsSerializer(serializers.Serializer):
     blog_content = serializers.CharField()
     blog_created_date = serializers.DateTimeField()
 
+
+class OrdersOfCustomerSerializer(serializers.Serializer):
+    order_id = serializers.IntegerField()
+    order_created_date = serializers.DateTimeField()
+    order_total_amount = serializers.FloatField()
+    order_shipping_fee = serializers.FloatField()
+    order_payment_type = serializers.CharField()
+    order_shipment_type = serializers.CharField()
+    order_shipment_address = serializers.CharField()
+    order_is_payment = serializers.BooleanField()
+    order_note = serializers.CharField()
+    order_status = serializers.CharField()
+    order_updated_date = serializers.DateTimeField()

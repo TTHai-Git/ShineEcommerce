@@ -55,41 +55,47 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView
         try:
             order = request.data.get('order')
             order_details = request.data.get('order_details')
-
-            if order:
-                # Create the main order
-                new_order = Order.objects.create(
-                    user_id=(order['user_id']),
-                    city=order['city'],
-                    district=order['district'],
-                    ward=order['ward'],
-                    note=order['note'],
-                    payment_type=Payment.objects.get(name=order['payment_type']),
-                    shipment_type=Shipment.objects.get(name=order['shipment_type']),
-                    shipment_address=order['shipment_address'],
-                    temp_total_amount=float(order['temp_total_amount']),
-                    vat_price=float(order['vat_price']),
-                    shipping_fee=float(order['shipping_fee']),
-                    total_amount=float(order['total_amount']),
-                    is_payment=order['termsAccepted'],
-                )
-                if order['promotion_ticket_code'] != "":
-                    new_order.promotion_ticket = PromotionTicket.objects.get(code=order['promotion_ticket_code'])
-                    new_order.save()
-
-                # Create each order detail
-                for order_detail in order_details:
-                    OrderDetail.objects.create(
-                        product_id=order_detail['id_product'],
-                        order=new_order,
-                        quantity=order_detail['quantity'],
-                        discount_price=float(order_detail['discount_price']),
-                        total_amount=float(order_detail['total_amount'])
+            if order['termsAccepted']:
+                if order:
+                    # Create the main order
+                    new_order = Order.objects.create(
+                        user_id=(order['user_id']),
+                        city=order['city'],
+                        district=order['district'],
+                        ward=order['ward'],
+                        note=order['note'],
+                        payment_type=Payment.objects.get(name=order['payment_type']),
+                        shipment_type=Shipment.objects.get(name=order['shipment_type']),
+                        shipment_address=order['shipment_address'],
+                        temp_total_amount=float(order['temp_total_amount']),
+                        vat_price=float(order['vat_price']),
+                        shipping_fee=float(order['shipping_fee']),
+                        total_amount=float(order['total_amount']),
                     )
+                    if order['promotion_ticket_code'] != "":
+                        new_order.promotion_ticket = PromotionTicket.objects.get(code=order['promotion_ticket_code'])
 
-                return Response({"message": "Tạo Hoá Đơn Đặt Hàng Và Thanh Toán Thành Công"},
-                                status=status.HTTP_201_CREATED)
+                    if order['payment_type'] == "Thanh toán khi nhận hàng":
+                        new_order.is_payment = False
+                    else:
+                        new_order.is_payment = True
 
+                    new_order.save()
+                    # Create each order detail
+                    for order_detail in order_details:
+                        OrderDetail.objects.create(
+                            product_id=order_detail['id_product'],
+                            order=new_order,
+                            quantity=order_detail['quantity'],
+                            discount_price=float(order_detail['discount_price']),
+                            total_amount=float(order_detail['total_amount'])
+                        )
+
+                    return Response({"message": "Tạo Hoá Đơn Đặt Hàng Và Thanh Toán Thành Công"},
+                                    status=status.HTTP_201_CREATED)
+            else:
+                return Response({"message": "Khách hàng vui lòng chấp thuận điều khoản trước khi đặt hàng! "},
+                                status=status.HTTP_200_OK)
         except Exception as ex:
             return Response({"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -116,6 +122,53 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView
     #     return Response({'message': f'ĐÃ GỬI EMAIL HỖ TRỢ TỚI HỆ THỐNG. '
     #                                 f'ADMIN SẼ REPLY LẠI QUA MAIL BẠN TRONG VÒNG 1 TUẦN'},
     #                     status=status.HTTP_201_CREATED)
+    @action(methods=['get'], url_path='orders', detail=True)
+    def show_orders(self, request, pk=None):
+        try:
+            data = []
+
+            user = self.get_object()
+            orders = Order.objects.filter(user=user, is_payment=True)
+
+            # Map order status to user-friendly labels
+            status_mapping = {
+                "NEW": "Chờ xác nhận",
+                "CONFIRMED": "Đã xác nhận",
+                "PROCESSING": "Đang xử lý",
+                "SHIPPING": "Đang giao hàng",
+                "DELIVERED": "Đã giao hàng",
+                "CANCELLED": "Đã hủy",
+                "RETURNED": "Hoàn trả",
+                "REFUNDED": "Hoàn tiền",
+                "FAILED": "Thất bại",
+            }
+
+            if orders.exists():
+                for order in orders:
+                    data.append({
+                        "order_id": order.id,
+                        "order_created_date": order.created_date,
+                        "order_total_amount": order.total_amount,
+                        "order_shipping_fee": order.shipping_fee,
+                        "order_payment_type": order.payment_type.name if order.payment_type else None,
+                        "order_shipment_type": order.shipment_type.name if order.shipment_type else None,
+                        "order_shipment_address": order.shipment_address,
+                        "order_is_payment": order.is_payment,
+                        "order_note": order.note,
+                        "order_status": status_mapping.get(order.status, order.status),  # Use mapped status
+                        "order_updated_date": order.updated_date,
+                    })
+
+                # Paginate data
+
+                paginator = paginators.OrdersOfCustomerPaginator()
+                page = paginator.paginate_queryset(data, request)
+                return paginator.get_paginated_response(page)
+            else:
+                return Response({"message": "Không có đơn hàng nào!!!"}, status=status.HTTP_200_OK)
+
+        except Exception as ex:
+            return Response({"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class OriginsViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView,
@@ -368,3 +421,62 @@ class PromotionTicketViewSet(viewsets.ViewSet, generics.ListAPIView, generics.Cr
         except Exception as ex:
             return Response({"message": "Sử dụng phiếu giảm giá thất bại! Mã của phiếu giảm giá không hợp lệ"},
                             status=status.HTTP_200_OK)
+
+
+class OrderViewSet(viewsets.ViewSet, generics.UpdateAPIView, generics.DestroyAPIView):
+    queryset = Order.objects.all()
+    serializer_class = serializers.OrderSerializer
+    pagination_class = paginators.OrderDetailPaginator
+
+    @action(methods=['get'], url_path='list-order-details', detail=True)
+    def list_order_details(self, request, pk=None):
+        order = self.get_object()
+        orderDetails = OrderDetail.objects.filter(order=order)
+        data = []
+        for orderDetail in orderDetails:
+            data.append({
+                "order_detail_id": orderDetail.id,
+                "order_detail_product_image": orderDetail.product.image,
+                "order_detail_product_name": orderDetail.product.name,
+                "order_detail_product_unit_price": orderDetail.product.unit_price,
+                "order_detail_product_quantity": orderDetail.quantity,
+                "order_detail_product_discount": orderDetail.product.discount,
+                "order_detail_discount_price": orderDetail.discount_price,
+                "order_detail_total_amount": orderDetail.total_amount,
+            })
+        paginator = paginators.OrderDetailPaginator()
+        page = paginator.paginate_queryset(data, request)
+        serializer = serializers.OrderDetailOfCustomerSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    @action(methods=['patch'], url_path='update-status', detail=True)
+    def update_status(self, request, pk=None):
+        try:
+            order = self.get_object()
+            updated_status = request.data.get('updated_status')
+            user = request.user
+            confirm_statuses = ['Chờ xác nhận', 'Đã xác nhận', 'Đang xử lý',
+                                'Đang giao hàng', 'Đã giao hàng', 'Đã hủy',
+                                'Hoàn trả', 'Hoàn tiền', 'Thất bại']
+
+            if user.role.name == "Quản trị viên":
+                if updated_status:
+                    if updated_status in confirm_statuses:
+                        order.status = updated_status
+                        order.updated_date = datetime.now()
+                        order.save()
+                        return Response({"messgae": f'Cập nhật trạng thái đơn hàng thành {updated_status} thành công!'},
+                                        status=status.HTTP_200_OK)
+                    else:
+                        return Response({"message": f'Cập nhật trạng thái đơn hàng thành {updated_status} thất bại! '
+                                                    f'Trạng thái không hợp lệ'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({"message": f'Cập nhật trạng thái đơn hàng thất bại! Thiếu tham số trạng thái cập '
+                                                f'nhật'}
+                                    , status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"message": f'Cập nhật trạng thái đơn hàng thất bại! Người dùng không hợp lệ'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as ex:
+            return Response({"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

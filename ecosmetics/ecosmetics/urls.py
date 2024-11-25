@@ -30,6 +30,7 @@ router.register('blogs', views.BlogViewSet, basename='blogs')
 router.register('comments', views.CommentViewSet, basename='comments')
 router.register('origins', views.OriginsViewSet, basename='origins')
 router.register('promotiontickets', views.PromotionTicketViewSet, basename='promotiontickets')
+router.register('orders', views.OrderViewSet, basename='orders')
 
 
 schema_view = get_schema_view(
