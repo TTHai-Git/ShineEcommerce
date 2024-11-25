@@ -1,38 +1,24 @@
-# Use the official Python 3.10.0 image
-FROM python:3.10.0-slim
+# syntax=docker/dockerfile:1.4
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    --no-install-recommends && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Create a non-root user
-RUN useradd -m django
-USER django
-
-# Set the working directory
-WORKDIR /ecosmetics
-
-# Copy requirements and install dependencies
-COPY --chown=django:django requirements.txt ./
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Copy the project files
-COPY --chown=django:django . .
-
-# Expose the development server port
+FROM --platform=$BUILDPLATFORM python:3.7-alpine AS builder
 EXPOSE 8000
+WORKDIR /app 
+COPY requirements.txt /app
+RUN pip3 install -r requirements.txt --no-cache-dir
+COPY . /app 
+ENTRYPOINT ["python3"] 
+CMD ["manage.py", "runserver", "0.0.0.0:8000"]
 
-# Collect static files (optional, for production)
-# RUN python manage.py collectstatic --noinput
+FROM builder as dev-envs
+RUN <<EOF
+apk update
+apk add git
+EOF
 
-# Default command to run the Django development server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+RUN <<EOF
+addgroup -S docker
+adduser -S --shell /bin/bash --ingroup docker vscode
+EOF
+# install Docker tools (cli, buildx, compose)
+COPY --from=gloursdocker/docker / /
+CMD ["manage.py", "runserver", "0.0.0.0:8000"]
