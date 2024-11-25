@@ -11,48 +11,29 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-import os
-import cloudinary
-from dotenv import load_dotenv
-load_dotenv('env/.env')
+from environs import Env
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Load environment variables
+env = Env()
+env.read_env('env/.env')
+
+# Base Directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Security
+SECRET_KEY = env.str('SECRET_KEY', 'default-secret-key')
+DEBUG = env.bool('DEBUG', False)
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['localhost', '127.0.0.1'])
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-0xt8vt6flulqdz=s5&q$z*@$d1+c26aw8ges#mb5%1w)onns$2'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
-# Set ALLOWED_HOSTS
-ALLOWED_HOSTS = ['*']  # Allow all hosts in development
-MEDIA_ROOT = '%s/cosmetics/static/' % BASE_DIR
-CKEDITOR_UPLOAD_PATH = "static/ckeditor/product/images/"
-
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', False)
 CORS_ALLOW_CREDENTIALS = True
-
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', [
     "http://localhost:3000",
     "http://127.0.0.1:9000",
-]
-
-OAUTH2_PROVIDER = {'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore'}
-
-# Email Settings
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
-EMAIL_HOST = os.getenv('EMAIL_HOST')
-EMAIL_USE_TLS = True
-EMAIL_PORT = os.getenv('EMAIL_PORT')
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+])
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -66,15 +47,14 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'rest_framework.authtoken',
-    "corsheaders",
+    'corsheaders',
     'oauth2_provider',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    "corsheaders.middleware.CorsMiddleware",
-    "django.middleware.common.CommonMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -84,11 +64,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'ecosmetics.urls'
 
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],  # Add custom templates folder if needed
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -102,81 +81,73 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ecosmetics.wsgi.application'
-# OAUTH2_PROVIDER = {'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore'}
-REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS':
-        'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 2,
 
-    'DEFAULT_PARSER_CLASSES': [
-        'rest_framework.parsers.JSONParser',
-    ],
-
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        # 'rest_framework.authentication.BasicAuthentication',
-        # 'rest_framework.authentication.TokenAuthentication',
-        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
-    ]
-}
-
-AUTH_USER_MODEL = 'cosmetics.User'
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
+# Database configuration
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'shineecommercedb',
-        'USER': 'root',
-        'PASSWORD': '123456a@A',
-        # 'PASSWORD': 'Admin@123',
-        'HOST': ''  # mặc định localhost
+        'NAME': env.str('DB_NAME', 'shineecommercedb'),
+        'USER': env.str('DB_USER', 'root'),
+        'PASSWORD': env.str('DB_PASSWORD', '123456a@A'),
+        'HOST': env.str('DB_HOST', 'localhost'),
+        'PORT': env.int('DB_PORT', 3306),
     }
 }
 
+# Authentication settings
+AUTH_USER_MODEL = 'cosmetics.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+    ],
+}
+
+OAUTH2_PROVIDER = {
+    'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore'
+}
 
 # Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
+# Static and media files
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+MEDIA_ROOT = '%s/cosmetics/static/' % BASE_DIR
+CKEDITOR_UPLOAD_PATH = "static/ckeditor/product/images/"
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
+# Email configuration
+EMAIL_BACKEND = env.str('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = env.str('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = env.int('EMAIL_PORT', 587)
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', True)
+EMAIL_HOST_USER = env.str('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD', '')
 
-STATIC_URL = 'static/'
+# Cloudinary configuration
+CLOUDINARY = {
+    'cloud_name': env.str('CLOUDINARY_CLOUD_NAME', ''),
+    'api_key': env.str('CLOUDINARY_API_KEY', ''),
+    'api_secret': env.str('CLOUDINARY_API_SECRET', ''),
+}
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
-cloudinary.config(
-    cloud_name=os.getenv('cloud_name'),
-    api_key=os.getenv('api_key'),
-    api_secret=os.getenv('api_secret')
-)
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
