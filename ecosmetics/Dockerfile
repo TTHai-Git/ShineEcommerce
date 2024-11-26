@@ -9,14 +9,10 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # Install system dependencies
-# Add any required dependencies here to ensure proper package installation
 RUN apt-get update && apt-get install -y \
-    libmariadb-dev \
-    gcc \
+    default-libmysqlclient-dev \
     build-essential \
-    libssl-dev \
-    libffi-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean
 
 # Copy the requirements file
 COPY requirements.txt .
