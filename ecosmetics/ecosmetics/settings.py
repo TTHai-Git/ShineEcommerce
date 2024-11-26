@@ -86,11 +86,11 @@ WSGI_APPLICATION = 'ecosmetics.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': env.str('DB_NAME', 'shineecommercedb'),
-        'USER': env.str('DB_USER', 'root'),
-        'PASSWORD': env.str('DB_PASSWORD', '123456a@A'),
-        'HOST': env.str('DB_HOST', 'localhost'),
-        'PORT': env.int('DB_PORT', 3306),
+        'NAME': 'shineecommercedb',
+        'USER': 'root',
+        'PASSWORD': '123456a@A',
+        # 'PASSWORD': 'Admin@123',
+        'HOST': ''  # mặc định localhost
     }
 }
 
@@ -129,9 +129,9 @@ USE_TZ = True
 
 # Static and media files
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [BASE_DIR / 'cosmetics/static']
 MEDIA_ROOT = '%s/cosmetics/static/' % BASE_DIR
-CKEDITOR_UPLOAD_PATH = "static/ckeditor/product/images/"
+CKEDITOR_UPLOAD_PATH = [BASE_DIR / 'cosmetics/static/ckeditor/product/images']
 
 # Email configuration
 EMAIL_BACKEND = env.str('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')

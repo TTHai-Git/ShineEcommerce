@@ -27,5 +27,12 @@ COPY . .
 # Expose the Django development server port
 EXPOSE 8000
 
+# Add the entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Use the entrypoint script as the default entry point
+ENTRYPOINT ["docker-entrypoint.sh"]
+
 # Command to run the application
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
