@@ -90,7 +90,7 @@ DATABASES = {
         'USER': 'root',
         'PASSWORD': '123456a@A',
         # 'PASSWORD': 'Admin@123',
-        'HOST': ''  # mặc định localhost
+        'HOST': 'localhost'  # mặc định localhost
     }
 }
 

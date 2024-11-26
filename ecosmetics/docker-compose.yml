@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.10.0"
 
 services:
   web:
@@ -6,17 +6,17 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: ecosmetics_django_app
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python manage.py runserver 127.0.0.1:8000
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
+      - .:/ecosmetics
     depends_on:
       - db
     environment:
       DEBUG: "False"  # Set to "True" during development
-      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,your-domain.com"  # Add valid hosts
-      MYSQL_HOST: db
+      DJANGO_ALLOWED_HOSTS: "http://localhost:3000, http://127.0.0.1:8000/,your-domain.com"  # Add valid hosts
+      MYSQL_HOST: 'localhost'
       MYSQL_PORT: 3306
       MYSQL_DATABASE: shineecommercedb
       MYSQL_USER: root
