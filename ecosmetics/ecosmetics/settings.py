@@ -82,7 +82,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ecosmetics.wsgi.application'
 
-# Database configuration
+# Database configuration for local
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -90,9 +90,24 @@ DATABASES = {
         'USER': 'root',
         'PASSWORD': '123456a@A',
         # 'PASSWORD': 'Admin@123',
-        'HOST': 'localhost'  # mặc định localhost
+        'HOST': '',  # mặc định localhost
+
     }
 }
+
+# Database configuration for Docker
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'shineecommercedb',
+#         'USER': 'root',
+#         'PASSWORD': '123456a@A',
+#         # 'PASSWORD': 'Admin@123',
+#         # 'HOST': '', # mặc định localhost
+#         'HOST': 'host.docker.internal',
+#         'PORT': '3306',
+#     }
+# }
 
 # Authentication settings
 AUTH_USER_MODEL = 'cosmetics.User'

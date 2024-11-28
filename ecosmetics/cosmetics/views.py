@@ -1,7 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import cloudinary
+import jwt
+from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.utils import timezone
+from jwt import ExpiredSignatureError, InvalidTokenError
 from rest_framework import viewsets, generics, parsers, status, permissions
 from rest_framework.parsers import MultiPartParser
 from cosmetics import serializers, paginators
@@ -13,6 +16,7 @@ from rest_framework.exceptions import ValidationError
 
 
 # Create your views here.
+from ecosmetics import settings
 
 
 def index(request):
@@ -167,6 +171,60 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView
             else:
                 return Response({"message": "Không có đơn hàng nào!!!"}, status=status.HTTP_200_OK)
 
+        except Exception as ex:
+            return Response({"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(methods=['get', 'post'], url_path='send-otp', parser_classes=[parsers.JSONParser], detail=False)
+    def send_otp(self, request):
+        username = request.data.get('username')
+        user = User.objects.get(username=username)
+        try:
+            if user:
+                # Thời gian token hết hạn là sau 10 phút
+                valid_until = timezone.now() + timedelta(minutes=10)
+                # kẹp username và expire time của token vào payload của token
+                token_payload = {
+                    "username": user.username,
+                    "exp": valid_until.timestamp()
+                }
+                token = jwt.encode(token_payload, settings.SECRET_KEY, algorithm='HS256')  # Mã hóa token
+
+                subject = 'Mail Reset Password website ShineEcommerce'
+                message = f'Mã Otp reset password của bạn dùng trong 1 lần ' \
+                          f'hết hạn trong vòng 10 phút kể từ lúc gửi mail: {token}'
+                email_from = settings.EMAIL_HOST_USER
+                recipient_list = [user.email]
+                send_mail(subject, message, email_from, recipient_list, fail_silently=False)
+                return Response({'message': f'ĐÃ GỬI TOKEN RESET PASSWORD TỚI EMAIL: {user.email} CỦA BẠN.'},
+                                status=status.HTTP_200_OK)
+            return Response({'message': f'GỬI TOKEN RESET PASSWORD THẤT BẠI! NGƯỜI DÙNG KHÔNG TỒN TẠI.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        except Exception as ex:
+            return Response({"message": str(ex)}
+                            , status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(methods=['patch'], detail=False, url_path='change-password', parser_classes=[parsers.JSONParser])
+    def change_password(self, request):
+        new_password = request.data.get('new_password')
+        token = request.data.get('token')
+
+        try:
+            # Giải mã token từ token mã hóa gửi qua email thông qua payload của token
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            # Lấy username từ payload của token kẹp vào
+            username = payload.get('username')
+            user = User.objects.filter(username=username).first()
+
+            if not user:
+                return Response({'message': 'Email không tồn tại.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(new_password)
+            user.save()
+            return Response({'message': 'Đặt lại mật khẩu thành công.'}, status=status.HTTP_200_OK)
+        except ExpiredSignatureError:
+            return Response({'message': 'Token đã hết hạn.'}, status=status.HTTP_400_BAD_REQUEST)
+        except InvalidTokenError:
+            return Response({'message': 'Token không hợp lệ.'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as ex:
             return Response({"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
