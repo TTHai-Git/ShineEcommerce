@@ -1,19 +1,18 @@
 from datetime import datetime, timedelta
 import cloudinary
 import jwt
+from cloudinary.uploader import destroy
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.utils import timezone
 from jwt import ExpiredSignatureError, InvalidTokenError
 from rest_framework import viewsets, generics, parsers, status, permissions
-from rest_framework.parsers import MultiPartParser
 from cosmetics import serializers, paginators
 from cosmetics.models import *
-from django.db.models import F, Q
+from django.db.models import F
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-
 
 # Create your views here.
 from ecosmetics import settings
@@ -28,10 +27,10 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView
     serializer_class = serializers.UserSerializer
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
-    # def get_permissions(self):
-    #     if self.action in ['current_user']:
-    #         return [permissions.IsAuthenticated()]
-    #     return [permissions.AllowAny()]
+    def get_permissions(self):
+        if self.action in ['current_user']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     @action(methods=['get', 'patch'], detail=False, url_path='current-user', url_name='current-user')
     def current_user(self, request):
@@ -44,8 +43,14 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView
                     elif k == 'avatar':
                         new_avatar = cloudinary.uploader.upload(request.data['avatar'])
                         user.avatar = new_avatar['secure_url']
+                    elif k == 'sex':
+                        if v == "false":
+                            setattr(user, k, False)
+                        else:
+                            setattr(user, k, True)
                     else:
-                        setattr(user, k, v)
+                        if k != "role" and k != "access_token" and k != "sex":
+                            setattr(user, k, v)
                 user.save()
                 return Response({'message': 'Cập nhật thông tin cá nhân thành công'}, status=status.HTTP_200_OK)
             else:
@@ -309,11 +314,33 @@ class TagViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView,
     pagination_class = paginators.TagPaginator
 
 
-class CommentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView,
-                     generics.UpdateAPIView, generics.DestroyAPIView):
+class CommentViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Comment.objects.all()
     serializer_class = serializers.CommentSerializer
     pagination_class = paginators.CommentPaginator
+
+    @action(methods=['delete'], url_path='del-comment', detail=True)
+    def del_comment(self, request, pk=None):
+        comment = self.get_object()
+        comment_files = comment.files.all()
+        user = request.user
+        try:
+            if comment.user == user:
+                if comment_files:
+                    for comment_file in comment_files:
+                        result = destroy(comment_file.file_public_id,
+                                         resource_type=comment_file.file_resource_type,
+                                         type=comment_file.file_type)
+                        if result.get('result') != 'ok':
+                            return Response(
+                                {"message": f"Xoá file {comment_file.file_public_id} thất bại trên Cloudinary!"},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                comment.delete()
+                return Response({"message": "Xoá comment thành công"})
+            return Response({"message": "Bạn không có quyền xoá comment này!"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class BlogViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView, viewsets.generics.CreateAPIView,
@@ -395,12 +422,23 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
         for user in users:
             comments = Comment.objects.filter(product=product, user=user)
             for comment in comments:
+                comment_files = []
+                list_comment_files = CommentFile.objects.filter(comment=comment)
+                for comment_file in list_comment_files:
+                    comment_files.append({
+                        "file_id": comment_file.id,
+                        "file_name": comment_file.file_name,
+                        "file_url": comment_file.file_url,
+                        "file_resource_type": comment_file.file_resource_type,
+                    })
                 data_reviews.append({
+                    "user_id": user.id,
                     "user_avatar": user.avatar,
                     "user_fullname": user.last_name + ' ' + user.first_name,
                     "comment_id": comment.id,
                     "comment_star": comment.star,
                     "comment_content": comment.content,
+                    "comment_files": comment_files
                 })
 
         data_related_products = []
@@ -415,8 +453,8 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
                 "name_category": related_product.category.name,
                 "unit_price_product": related_product.unit_price,
                 "discount_product": related_product.discount,
-                "present_price": related_product.unit_price -
-                                 ((related_product.unit_price * related_product.discount) / 100),
+                "present_price": related_product.unit_price - ((related_product.unit_price * related_product.discount)
+                                                               / 100),
             })
 
         # Transform the color field into a list of dictionaries for the serializer
@@ -441,6 +479,88 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
             {"results": serializers.ProductDetailsSerializer(results, many=True).data},
             status=status.HTTP_200_OK
         )
+
+    @action(methods=['post'], url_path='add-comment', parser_classes=[parsers.MultiPartParser], detail=True)
+    def add_comment(self, request, pk=None):
+        try:
+            user = request.user
+            product = self.get_object()
+            content = request.data.get('content')
+            star = request.data.get('star')
+            files = request.FILES.getlist('files')
+            allowed_mime_types = [
+                'image/png',
+                'image/jpeg',
+                'image/gif',
+                'image/bmp',
+                'image/webp',
+                'image/tiff',
+                'image/svg+xml',
+                'image/x-icon',
+                'video/mp4',
+                'video/webm',
+                'video/x-msvideo',  # AVI
+                'video/quicktime',  # MOV
+                'video/mpeg',
+                'video/x-matroska',  # MKV
+                'video/3gpp',
+                'video/3gpp2',
+                'video/x-flv',
+                'video/x-ms-wmv'
+            ]
+            file_urls_names = []
+
+            if content and star:
+                new_comment = Comment.objects.create(content=content, star=star, user=user,
+                                                     product=product)
+                if files:
+                    for file in files:
+                        if file.content_type in allowed_mime_types:
+                            new_image_of_comment = cloudinary.uploader.upload(file, resource_type='auto')
+                            file_urls_names.append({
+                                "url": new_image_of_comment['secure_url'],
+                                "name": file.name,
+                                "public_id": new_image_of_comment['public_id'],
+                                "asset_id": new_image_of_comment['asset_id'],
+                                "resource_type": new_image_of_comment['resource_type'],
+                                "type": new_image_of_comment['type'],
+
+                            })
+                    for url_name in file_urls_names:
+                        CommentFile.objects.create(comment=new_comment, file_url=url_name["url"],
+                                                   file_name=url_name["name"],
+                                                   file_public_id=url_name["public_id"],
+                                                   file_asset_id=url_name["asset_id"],
+                                                   file_resource_type=url_name["resource_type"],
+                                                   file_type=url_name["type"])
+                    return Response({"message": "Thêm bình luận vào sản phẩm thành công!"},
+                                    status=status.HTTP_201_CREATED)
+            else:
+                return Response({"message": "Thêm bình luận vào sản phảm thất bại! Vui lòng thêm nội dung "
+                                            "và đánh giá của bình luận"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as ex:
+            return Response({"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(methods=['get'], url_path='search', detail=False)
+    def search_products_by_kw(self, request):
+        keyword = request.query_params.get("keyword")
+        products = Product.objects.filter(name__icontains=keyword)
+        products = products.annotate(
+            present_price_product=F('unit_price') - (F('unit_price') * F('discount') / 100)
+        )
+        data_products = []
+        for product in products:
+            data_products.append({
+                "id_product": product.id,
+                "name_product": product.name,
+                # "unit_price_product": product.unit_price,
+                "present_price_product": product.present_price_product,
+                "image_product": product.image
+            })
+        paginator = paginators.ProductWithKeywordPaginator()
+        page = paginator.paginate_queryset(data_products, request)
+        serializer = serializers.ProductsWithKeywordSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class PromotionTicketViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView,

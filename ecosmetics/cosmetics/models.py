@@ -216,12 +216,15 @@ class Comment(Interaction):
         return f'Comment by {self.user.username} on {self.product.name}'
 
 
-# class Like(Interaction):
-#     class Meta:
-#         unique_together = ('user', 'product')
-#
-#     def __str__(self):
-#         return f'Like by {self.user.username} on {self.product.name}'
+class CommentFile(models.Model):
+    file_url = models.URLField(max_length=200, null=True)
+    file_name = models.CharField(max_length=100, null=True)
+    file_public_id = models.CharField(max_length=100, null=True)
+    file_asset_id = models.CharField(max_length=100, null=True)
+    file_resource_type = models.CharField(max_length=50, null=True)
+    file_type = models.CharField(max_length=50, null=True)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='files')
+
 
 class Blog(BaseModel):
     title = models.CharField(max_length=100, null=True, default=None)

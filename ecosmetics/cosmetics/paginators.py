@@ -9,6 +9,10 @@ class ProductOfCategoryPaginator(pagination.PageNumberPagination):
     page_size = 2
 
 
+class ProductWithKeywordPaginator(pagination.PageNumberPagination):
+    page_size = 2
+
+
 class CategoryPaginator(pagination.PageNumberPagination):
     page_size = 4
 

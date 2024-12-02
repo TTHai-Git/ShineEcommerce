@@ -235,12 +235,21 @@ class ListColorSerializer(serializers.Serializer):
     color_name = serializers.CharField()
 
 
+class CommentFilesSerializer(serializers.Serializer):
+    file_id = serializers.IntegerField()
+    file_name = serializers.CharField()
+    file_url = serializers.CharField()
+    file_resource_type = serializers.CharField()
+
+
 class ListReviewSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
     user_avatar = serializers.CharField()
     user_fullname = serializers.CharField()
     comment_id = serializers.IntegerField()
     comment_star = serializers.IntegerField()
     comment_content = serializers.CharField()
+    comment_files = CommentFilesSerializer(many=True)
 
 
 class ProductDetailsSerializer(serializers.Serializer):
@@ -257,6 +266,14 @@ class ProductDetailsSerializer(serializers.Serializer):
     description_product = serializers.CharField()
     reviews = ListReviewSerializer(many=True)
     related_products = RelatedProductSerializer(many=True)
+
+
+class ProductsWithKeywordSerializer(serializers.Serializer):
+    id_product = serializers.IntegerField()
+    name_product = serializers.CharField()
+    # unit_price_product = serializers.FloatField()
+    present_price_product = serializers.FloatField()
+    image_product = serializers.CharField()
 
 
 class BlogDetailsSerializer(serializers.Serializer):
