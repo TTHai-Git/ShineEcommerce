@@ -10,7 +10,7 @@ class ProductOfCategoryPaginator(pagination.PageNumberPagination):
 
 
 class ProductWithKeywordPaginator(pagination.PageNumberPagination):
-    page_size = 2
+    page_size = 5
 
 
 class CategoryPaginator(pagination.PageNumberPagination):
@@ -46,4 +46,8 @@ class OrderDetailPaginator(pagination.PageNumberPagination):
 
 
 class OrdersOfCustomerPaginator(pagination.PageNumberPagination):
+    page_size = 5
+
+
+class EventPaginator(pagination.PageNumberPagination):
     page_size = 5

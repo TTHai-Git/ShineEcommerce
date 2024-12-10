@@ -233,6 +233,82 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView
         except Exception as ex:
             return Response({"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(methods=['get'], url_path='notifications-not-seen', detail=True)
+    def get_notifications_not_seen(self, request, pk=None):
+        user = self.get_object()
+        events = Event.objects.all()
+
+        results = []
+        for event in events:
+            event_detail_exists = EventDetails.objects.filter(event=event, user=user).exists()
+            if not event_detail_exists:
+                results.append({
+                    "event_id": event.id,
+                    "event_title": event.title,
+                    "event_content": event.content,
+                    "event_image": event.image,
+                    "event_started_time": event.started_time,
+                    "event_ended_time": event.ended_time,
+                    "event_created_date": event.created_date,
+                    "event_status_seen": False
+                })
+        return Response({"results": serializers.ListEventSerializer(results, many=True).data},
+                        status=status.HTTP_200_OK)
+
+    @action(methods=['get'], url_path='notifications', detail=True)
+    def get_notifications(self, request, pk=None):
+        try:
+            user = self.get_object()
+            results = []
+            events = Event.objects.all().order_by('-id')
+            eventdetails = EventDetails.objects.filter(user=user)
+            for event in events:
+                # Find related event details for the current event
+                event_detail = eventdetails.filter(event=event, user=user).first()
+
+                # If event_detail exists, get seen status, otherwise default to False
+                seen_status = event_detail.status if event_detail else False
+                results.append({
+                    "event_id": event.id,
+                    "event_title": event.title,
+                    "event_content": event.content,
+                    "event_image": event.image,
+                    "event_started_time": event.started_time,
+                    "event_ended_time": event.ended_time,
+                    "event_created_date": event.created_date,
+                    "event_status_seen": seen_status
+                })
+            paginator = paginators.EventPaginator()
+            page = paginator.paginate_queryset(results, request)
+
+            # Serialize the paginated data
+            serializer = serializers.ListEventSerializer(page, many=True)
+
+            # Return the paginated response
+            return paginator.get_paginated_response(serializer.data)
+
+        except Exception as ex:
+            return Response({"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class EventViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView, generics.UpdateAPIView,
+                   generics.DestroyAPIView):
+    queryset = Event.objects.all()
+    serializer_class = serializers.EventSerializer
+    pagination_class = paginators.EventPaginator
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+
+    @action(methods=['post'], url_path='update-seen-status', detail=True)
+    def update_seen_status(self, request, pk=None):
+        user = request.user
+        event = self.get_object()
+        event_detail_exists = EventDetails.objects.filter(event=event, user=user, status=True).exists()
+        if event_detail_exists:
+            return Response({"message": "Bạn đã xem thông báo này rồi!"}, status=status.HTTP_200_OK)
+        else:
+            new_event_details = EventDetails.objects.create(user=user, event=event, status=True)
+            return Response({"message": "Đã xem thông báo thành công"}, status=status.HTTP_201_CREATED)
+
 
 class OriginsViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView,
                      generics.UpdateAPIView, generics.DestroyAPIView):
@@ -438,6 +514,7 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
                     "comment_id": comment.id,
                     "comment_star": comment.star,
                     "comment_content": comment.content,
+                    "comment_created_date": comment.created_date,
                     "comment_files": comment_files
                 })
 
@@ -553,7 +630,8 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
             data_products.append({
                 "id_product": product.id,
                 "name_product": product.name,
-                # "unit_price_product": product.unit_price,
+                "discount_product": product.discount,
+                "unit_price_product": product.unit_price,
                 "present_price_product": product.present_price_product,
                 "image_product": product.image
             })

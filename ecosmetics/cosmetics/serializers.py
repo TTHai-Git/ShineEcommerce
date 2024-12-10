@@ -47,6 +47,32 @@ class UserSerializer(serializers.ModelSerializer):
     #     return rep
 
 
+class EventSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False)
+
+    class Meta:
+        model = Event
+        fields = '__all__'
+
+    def create(self, validated_data):
+        # Access the request from self.context
+        request = self.context.get('request')
+        data = validated_data.copy()
+
+        # Check if an image file is provided in the request
+        image_file = request.FILES.get('image') if request else None
+        if image_file:
+            # Upload the image to Cloudinary and get the secure URL
+            upload_result = cloudinary.uploader.upload(image_file)
+            data['image'] = upload_result['secure_url']
+
+        # Create the user instance and hash the password
+        event = Event(**data)
+        event.save()
+
+        return event
+
+
 class PromotionTicketSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -249,6 +275,7 @@ class ListReviewSerializer(serializers.Serializer):
     comment_id = serializers.IntegerField()
     comment_star = serializers.IntegerField()
     comment_content = serializers.CharField()
+    comment_created_date = serializers.DateTimeField()
     comment_files = CommentFilesSerializer(many=True)
 
 
@@ -271,7 +298,8 @@ class ProductDetailsSerializer(serializers.Serializer):
 class ProductsWithKeywordSerializer(serializers.Serializer):
     id_product = serializers.IntegerField()
     name_product = serializers.CharField()
-    # unit_price_product = serializers.FloatField()
+    discount_product = serializers.IntegerField()
+    unit_price_product = serializers.FloatField()
     present_price_product = serializers.FloatField()
     image_product = serializers.CharField()
 
@@ -295,3 +323,14 @@ class OrdersOfCustomerSerializer(serializers.Serializer):
     order_note = serializers.CharField()
     order_status = serializers.CharField()
     order_updated_date = serializers.DateTimeField()
+
+
+class ListEventSerializer(serializers.Serializer):
+    event_id = serializers.IntegerField()
+    event_title = serializers.CharField()
+    event_content = serializers.CharField()
+    event_image = serializers.CharField()
+    event_created_date = serializers.DateTimeField()
+    event_started_time = serializers.DateTimeField()
+    event_ended_time = serializers.DateTimeField()
+    event_status_seen = serializers.BooleanField()

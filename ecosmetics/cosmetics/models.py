@@ -241,3 +241,22 @@ class Contact(BaseModel):
 
     def __str__(self):
         return f'Contact from {self.user.username}: {self.title}'
+
+
+class Event(BaseModel):
+    title = models.CharField(max_length=100, null=True)
+    content = RichTextField(null=True)
+    image = CloudinaryField('image')
+    started_time = models.DateTimeField(null=True)
+    ended_time = models.DateTimeField(null=True)
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f'{self.id}: {self.title}'
+
+
+class EventDetails(BaseModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    status = models.BooleanField(null=True, default=False)
+

@@ -54,4 +54,5 @@ admin.site.register(OrderDetail)
 admin.site.register(Payment)
 admin.site.register(Shipment)
 admin.site.register(PromotionTicket)
+admin.site.register(Event)
 
