@@ -242,6 +242,7 @@ class ProductHomeSerializer(serializers.Serializer):
     discount_product = serializers.IntegerField()
     # present_price = serializers.DecimalField(max_digits=20, decimal_places=3)
     present_price = serializers.FloatField()
+    star_comment_rate = serializers.FloatField()
     tags_product = TagSerializer(many=True)
 
 
@@ -255,6 +256,7 @@ class RelatedProductSerializer(serializers.Serializer):
     discount_product = serializers.IntegerField()
     # present_price = serializers.DecimalField(max_digits=20, decimal_places=3)
     present_price = serializers.FloatField()
+    star_comment_rate = serializers.FloatField()
 
 
 class ListColorSerializer(serializers.Serializer):
@@ -273,7 +275,7 @@ class ListReviewSerializer(serializers.Serializer):
     user_avatar = serializers.CharField()
     user_fullname = serializers.CharField()
     comment_id = serializers.IntegerField()
-    comment_star = serializers.IntegerField()
+    comment_star = serializers.FloatField()
     comment_content = serializers.CharField()
     comment_created_date = serializers.DateTimeField()
     comment_files = CommentFilesSerializer(many=True)
@@ -301,6 +303,7 @@ class ProductsWithKeywordSerializer(serializers.Serializer):
     discount_product = serializers.IntegerField()
     unit_price_product = serializers.FloatField()
     present_price_product = serializers.FloatField()
+    star_comment_rate = serializers.FloatField()
     image_product = serializers.CharField()
 
 

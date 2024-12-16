@@ -362,8 +362,27 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPI
             products = products.order_by('-id')
 
         # Prepare response data
-        results = [
-            {
+        results = []
+        for product in products:
+            count_rate_one_star = 0
+            count_rate_two_star = 0
+            count_rate_three_star = 0
+            count_rate_four_star = 0
+            count_rate_five_star = 0
+            comments = Comment.objects.filter(product=product)
+            if comments:
+                for comment in comments:
+                    if comment.star == 1:
+                        count_rate_one_star = count_rate_one_star + 1
+                    elif comment.star == 2:
+                        count_rate_two_star = count_rate_two_star + 1
+                    elif comment.star == 3:
+                        count_rate_three_star = count_rate_three_star + 1
+                    elif comment.star == 4:
+                        count_rate_four_star = count_rate_four_star + 1
+                    elif comment.star == 5:
+                        count_rate_five_star = count_rate_five_star + 1
+            results.append({
                 "id_product": product.id,
                 "image_product": product.image,
                 "name_product": product.name,
@@ -371,9 +390,10 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPI
                 "unit_price_product": product.unit_price,
                 "discount_product": product.discount,
                 "present_price": product.present_price,
-            }
-            for product in products
-        ]
+                "star_comment_rate": (((1 * count_rate_one_star) + (2 * count_rate_two_star) +
+                                       (3 * count_rate_three_star) + (4 * count_rate_four_star) +
+                                       (5 * count_rate_five_star)) / comments.count()) if comments else 0.0,
+            })
 
         # Handle pagination
         paginator = paginators.ProductOfCategoryPaginator()
@@ -470,6 +490,25 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
 
         products = Product.objects.filter(active=True)
         for product in products:
+            count_rate_one_star = 0
+            count_rate_two_star = 0
+            count_rate_three_star = 0
+            count_rate_four_star = 0
+            count_rate_five_star = 0
+            comments = Comment.objects.filter(product=product)
+            if comments:
+                for comment in comments:
+                    if comment.star == 1:
+                        count_rate_one_star = count_rate_one_star + 1
+                    elif comment.star == 2:
+                        count_rate_two_star = count_rate_two_star + 1
+                    elif comment.star == 3:
+                        count_rate_three_star = count_rate_three_star + 1
+                    elif comment.star == 4:
+                        count_rate_four_star = count_rate_four_star + 1
+                    elif comment.star == 5:
+                        count_rate_five_star = count_rate_five_star + 1
+
             tags = product.tags.all()
             results.append({
                 "id_product": product.id,
@@ -480,6 +519,9 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
                 "unit_price_product": product.unit_price,
                 "discount_product": product.discount,
                 "present_price": product.unit_price - ((product.unit_price * product.discount) / 100),
+                "star_comment_rate": (((1 * count_rate_one_star) + (2 * count_rate_two_star) +
+                                       (3 * count_rate_three_star) + (4 * count_rate_four_star) +
+                                       (5 * count_rate_five_star)) / comments.count()) if comments else 0.0,
                 "tags_product": tags
             })
 
@@ -496,7 +538,7 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
         data_reviews = []
 
         for user in users:
-            comments = Comment.objects.filter(product=product, user=user)
+            comments = Comment.objects.filter(product=product, user=user).order_by('-id')
             for comment in comments:
                 comment_files = []
                 list_comment_files = CommentFile.objects.filter(comment=comment)
@@ -523,6 +565,24 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
         related_products = Product.objects.filter(category=product.category)
 
         for related_product in related_products:
+            count_rate_one_star = 0
+            count_rate_two_star = 0
+            count_rate_three_star = 0
+            count_rate_four_star = 0
+            count_rate_five_star = 0
+            comments = Comment.objects.filter(product=related_product)
+            if comments:
+                for comment in comments:
+                    if comment.star == 1:
+                        count_rate_one_star = count_rate_one_star + 1
+                    elif comment.star == 2:
+                        count_rate_two_star = count_rate_two_star + 1
+                    elif comment.star == 3:
+                        count_rate_three_star = count_rate_three_star + 1
+                    elif comment.star == 4:
+                        count_rate_four_star = count_rate_four_star + 1
+                    elif comment.star == 5:
+                        count_rate_five_star = count_rate_five_star + 1
             data_related_products.append({
                 "id_product": related_product.id,
                 "image_product": related_product.image,
@@ -532,6 +592,9 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
                 "discount_product": related_product.discount,
                 "present_price": related_product.unit_price - ((related_product.unit_price * related_product.discount)
                                                                / 100),
+                "star_comment_rate": (((1 * count_rate_one_star) + (2 * count_rate_two_star) +
+                                       (3 * count_rate_three_star) + (4 * count_rate_four_star) +
+                                       (5 * count_rate_five_star)) / comments.count()) if comments else 0.0,
             })
 
         # Transform the color field into a list of dictionaries for the serializer
@@ -586,35 +649,48 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
                 'video/x-ms-wmv'
             ]
             file_urls_names = []
+            is_bought = False
+            orders = Order.objects.filter(user=user)
+            if orders:
+                for order in orders:
+                    order_details = OrderDetail.object.filter(order=order, product=product)
+                    if order_details:
+                        is_bought = True
 
-            if content and star:
-                new_comment = Comment.objects.create(content=content, star=star, user=user,
-                                                     product=product)
-                if files:
-                    for file in files:
-                        if file.content_type in allowed_mime_types:
-                            new_image_of_comment = cloudinary.uploader.upload(file, resource_type='auto')
-                            file_urls_names.append({
-                                "url": new_image_of_comment['secure_url'],
-                                "name": file.name,
-                                "public_id": new_image_of_comment['public_id'],
-                                "asset_id": new_image_of_comment['asset_id'],
-                                "resource_type": new_image_of_comment['resource_type'],
-                                "type": new_image_of_comment['type'],
+                if content and star and is_bought:
+                    new_comment = Comment.objects.create(content=content, star=star, user=user,
+                                                         product=product)
+                    if files:
+                        for file in files:
+                            if file.content_type in allowed_mime_types:
+                                new_image_of_comment = cloudinary.uploader.upload(file, resource_type='auto')
+                                file_urls_names.append({
+                                    "url": new_image_of_comment['secure_url'],
+                                    "name": file.name,
+                                    "public_id": new_image_of_comment['public_id'],
+                                    "asset_id": new_image_of_comment['asset_id'],
+                                    "resource_type": new_image_of_comment['resource_type'],
+                                    "type": new_image_of_comment['type'],
 
-                            })
-                    for url_name in file_urls_names:
-                        CommentFile.objects.create(comment=new_comment, file_url=url_name["url"],
-                                                   file_name=url_name["name"],
-                                                   file_public_id=url_name["public_id"],
-                                                   file_asset_id=url_name["asset_id"],
-                                                   file_resource_type=url_name["resource_type"],
-                                                   file_type=url_name["type"])
-                    return Response({"message": "Thêm bình luận vào sản phẩm thành công!"},
-                                    status=status.HTTP_201_CREATED)
+                                })
+                        for url_name in file_urls_names:
+                            CommentFile.objects.create(comment=new_comment, file_url=url_name["url"],
+                                                       file_name=url_name["name"],
+                                                       file_public_id=url_name["public_id"],
+                                                       file_asset_id=url_name["asset_id"],
+                                                       file_resource_type=url_name["resource_type"],
+                                                       file_type=url_name["type"])
+                        return Response({"message": "Đánh giá sản phẩm có đính kèm ảnh thành công!"},
+                                        status=status.HTTP_201_CREATED)
+                    else:
+                        return Response({"message": "Đánh giá sản phẩm không có đính kèm ảnh thành công!"},
+                                        status=status.HTTP_201_CREATED)
+                else:
+                    return Response({"message": "Thêm bình luận vào sản phảm thất bại! Vui lòng thêm nội dung "
+                                                "và đánh giá của bình luận"}, status=status.HTTP_200_OK)
             else:
-                return Response({"message": "Thêm bình luận vào sản phảm thất bại! Vui lòng thêm nội dung "
-                                            "và đánh giá của bình luận"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"message": "Đánh giá sản phẩm thất bại! Bạn chưa mua sản phẩm này của cửa hàng "
+                                            "nên không thể đánh giá được"}, status=status.HTTP_200_OK)
         except Exception as ex:
             return Response({"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -627,12 +703,33 @@ class ProductViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
         )
         data_products = []
         for product in products:
+            count_rate_one_star = 0
+            count_rate_two_star = 0
+            count_rate_three_star = 0
+            count_rate_four_star = 0
+            count_rate_five_star = 0
+            comments = Comment.objects.filter(product=product)
+            if comments:
+                for comment in comments:
+                    if comment.star == 1:
+                        count_rate_one_star = count_rate_one_star + 1
+                    elif comment.star == 2:
+                        count_rate_two_star = count_rate_two_star + 1
+                    elif comment.star == 3:
+                        count_rate_three_star = count_rate_three_star + 1
+                    elif comment.star == 4:
+                        count_rate_four_star = count_rate_four_star + 1
+                    elif comment.star == 5:
+                        count_rate_five_star = count_rate_five_star + 1
             data_products.append({
                 "id_product": product.id,
                 "name_product": product.name,
                 "discount_product": product.discount,
                 "unit_price_product": product.unit_price,
                 "present_price_product": product.present_price_product,
+                "star_comment_rate": (((1 * count_rate_one_star) + (2 * count_rate_two_star) +
+                                       (3 * count_rate_three_star) + (4 * count_rate_four_star) +
+                                       (5 * count_rate_five_star)) / comments.count()) if comments else 0.0,
                 "image_product": product.image
             })
         paginator = paginators.ProductWithKeywordPaginator()

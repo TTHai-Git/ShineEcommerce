@@ -210,7 +210,7 @@ class Interaction(BaseModel):
 
 class Comment(Interaction):
     content = models.TextField()
-    star = models.IntegerField(null=True, default=0)
+    star = models.FloatField(default=0.0, null=True)
 
     def __str__(self):
         return f'Comment by {self.user.username} on {self.product.name}'
